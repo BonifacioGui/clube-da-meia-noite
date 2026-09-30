@@ -1,0 +1,5 @@
+import type { User } from "@/types/reading";
+export const XP_RULES = { session: 10, longSession: 5, readingDay: 10, weeklyGoal: 50 } as const;
+export const LEVELS = [{ min: 0, name: "Leitor Casual" }, { min: 200, name: "Página Virada" }, { min: 500, name: "Explorador Literário" }, { min: 900, name: "Devorador de Livros" }, { min: 1600, name: "Guardião da Estante" }, { min: 3000, name: "Arquimago das Letras" }];
+export function levelFor(xp: number) { let index = 0; LEVELS.forEach((level, i) => { if (xp >= level.min) index = i; }); return { level: index + 1, ...LEVELS[index] }; }
+export function nextLevelFor(users: User[]) { const xp = users.reduce((sum, user) => sum + user.xp, 0); const current = levelFor(xp); const next = LEVELS[current.level] ?? { min: current.min + 1000, name: "Lenda da Biblioteca" }; const span = next.min - current.min; return { name: next.name, remaining: Math.max(0, next.min - xp), progress: Math.min(100, Math.round(((xp - current.min) / span) * 100)) }; }

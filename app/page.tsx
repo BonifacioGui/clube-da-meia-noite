@@ -1,26 +1,29 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Award, BookHeart, BookOpen, CircleUserRound, Flame, Home, LibraryBig, MoonStar, Play, Settings2, Sparkles, UsersRound } from "lucide-react";
+import { Award, BookHeart, BookOpen, CircleUserRound, Flame, History, Home, LibraryBig, MoonStar, Play, Settings2, Sparkles, UsersRound } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { Dashboard } from "@/components/reading/dashboard";
 import { LibraryPage } from "@/components/reading/library-page";
 import { AchievementsPage } from "@/components/reading/achievements-page";
 import { ProfilePage } from "@/components/reading/profile-page";
 import { ReadingDialog } from "@/components/reading/reading-dialog";
+import { OnboardingPage } from "@/components/reading/onboarding-page";
+import { HistoryPage } from "@/components/reading/history-page";
 import { useReadingClub } from "@/hooks/use-reading-club";
 import { useReadingClubTools } from "@/hooks/use-reading-club-tools";
 
-type Tab = "home" | "library" | "read" | "achievements" | "profile";
+type Tab = "home" | "library" | "read" | "achievements" | "history" | "profile";
 const navItems = [
   { id: "home", label: "Início", icon: Home }, { id: "library", label: "Biblioteca", icon: LibraryBig },
   { id: "read", label: "Ler", icon: Play }, { id: "achievements", label: "Conquistas", icon: Award },
-  { id: "profile", label: "Perfil", icon: CircleUserRound },
+  { id: "history", label: "Histórico", icon: History }, { id: "profile", label: "Perfil", icon: CircleUserRound },
 ] as const;
 const pageMeta = {
-  home: { eyebrow: "NOSSA SEMANA", title: "A constância fica melhor a dois.", description: "29 set — 5 out", icon: UsersRound },
+  home: { eyebrow: "NOSSA SEMANA", title: "A constância fica melhor a dois.", description: "", icon: UsersRound },
   library: { eyebrow: "ESTANTE COMPARTILHADA", title: "Minha Biblioteca", description: "Histórias em curso e próximas aventuras", icon: BookHeart },
   achievements: { eyebrow: "SALA DE TROFÉUS", title: "Conquistas", description: "Pequenos marcos de uma grande jornada", icon: Sparkles },
+  history: { eyebrow: "MEMÓRIA DO CLUBE", title: "Histórico", description: "Sessões e pactos derivados dos registros persistidos", icon: History },
   profile: { eyebrow: "O NOSSO CLUBE", title: "Perfil & preferências", description: "Ajuste metas, cartas e acompanhe o cofre", icon: Settings2 },
 };
 
@@ -34,6 +37,9 @@ export default function HomePage() {
     if (next === "read") return setReaderOpen(true);
     setTab(next); window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  if (!club.hydrated) return <div className="app-loading"><MoonStar size={28} /><p>Abrindo o clube…</p></div>;
+  if (!club.data) return <><OnboardingPage club={club} /><Toaster position="top-center" /></>;
 
   return (
     <div className="app-shell">
@@ -51,11 +57,12 @@ export default function HomePage() {
         <button className="read-now" onClick={() => setReaderOpen(true)}><Play size={17} fill="currentColor" /> Começar a ler</button>
       </aside>
       <main className="main-area">
-        <header className="topbar"><div className="mobile-brand"><MoonStar size={19} /><span>Meia-Noite</span></div><div className="top-actions"><div className="pill-stat"><Flame size={16} /> {club.data.coupleStreak} semanas</div><div className="avatar-stack" aria-label="Guilherme e Ana"><span>G</span><span>A</span></div></div></header>
-        <section className="page-heading"><div><p className="eyebrow"><meta.icon size={14} /> {meta.eyebrow}</p><h1>{meta.title}</h1><p>{meta.description}</p></div>{tab === "home" && <button className="desktop-start" onClick={() => setReaderOpen(true)}><Play size={18} fill="currentColor" /> Começar a ler</button>}</section>
+        <header className="topbar"><div className="mobile-brand"><MoonStar size={19} /><span>Meia-Noite</span></div><div className="top-actions">{club.storageError && <div className="storage-warning">{club.storageError}</div>}{club.dataSource === "development-seed" && <div className="demo-badge">Modo demonstração</div>}<div className="pill-stat"><Flame size={16} /> {club.data.coupleStreak} semanas</div><div className="avatar-stack" aria-label="Membros da sala">{club.data.users.map((user) => <span key={user.id} style={{ background: user.accent }}>{user.initials}</span>)}</div></div></header>
+        <section className="page-heading"><div><p className="eyebrow"><meta.icon size={14} /> {meta.eyebrow}</p><h1>{meta.title}</h1><p>{tab === "home" ? club.weekLabel : meta.description}</p></div>{tab === "home" && <button className="desktop-start" disabled={!club.currentBook()} onClick={() => setReaderOpen(true)}><Play size={18} fill="currentColor" /> Começar a ler</button>}</section>
         {tab === "home" && <Dashboard club={club} onStartReading={() => setReaderOpen(true)} />}
         {tab === "library" && <LibraryPage club={club} />}
         {tab === "achievements" && <AchievementsPage club={club} />}
+        {tab === "history" && <HistoryPage club={club} />}
         {tab === "profile" && <ProfilePage club={club} />}
       </main>
       <nav className="bottom-nav" aria-label="Navegação mobile">

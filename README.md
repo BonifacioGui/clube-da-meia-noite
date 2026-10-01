@@ -1,37 +1,45 @@
 # Clube da Meia-Noite
 
-MVP de um clube de leitura gamificado e cooperativo para duas pessoas.
+MVP gamificado de leitura cooperativa para uma sala de até duas pessoas. A aplicação funciona sem backend: o estado normalizado é persistido no `localStorage` do navegador e toda a interface é derivada desse estado.
 
 ## Executar localmente
 
-Requisitos: Node.js 22 ou superior.
+Requisito: Node.js 22 ou superior.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abra o endereço exibido no terminal (normalmente `http://localhost:5173`).
+O modo de desenvolvimento carrega um seed demonstrativo isolado em `data/dev-seed.ts` somente quando ainda não existe estado v2 persistido. Builds de produção iniciam no onboarding vazio.
 
-## O que está incluído
+## Fonte de verdade
 
-- Dashboard semanal cooperativo com XP, níveis e streaks
-- Cronômetro e registro de sessões de leitura
-- Biblioteca com cadastro, edição, progresso e status de livros
-- Meta e Pacto da Semana com sorteio de cartas
-- Cofre da Leitura e histórico simbólico
-- Conquistas bloqueadas e desbloqueadas
-- Persistência centralizada em `services/storage.ts` com `localStorage`
-- Layout mobile-first e navegação adaptada ao desktop
+- Perfis, salas e vínculos: `profiles`, `rooms` e `memberships`.
+- Livros: pertencem simultaneamente à sala e ao perfil proprietário.
+- Sessões: apontam para sala, perfil e livro compatíveis.
+- Metas, pactos, cartas, cofre e resultados semanais: pertencem à sala.
+- XP, níveis, progresso, dias lidos, streak individual, streak da dupla e conquistas: são calculados a partir de sessões e resultados; não são armazenados como contadores duplicados.
+- Persistência e reparo de relações: `services/storage.ts`.
+- Seletores, cálculos e visões derivadas: `utils/domain.ts` e `utils/gamification.ts`.
+- Mutações e regras de autorização local: `hooks/use-reading-club.ts`.
 
-## Estrutura
+## Fluxos implementados
 
-- `app/`: entrada e estilos globais
-- `components/reading/`: telas e fluxos do produto
-- `data/`: dados fictícios iniciais
-- `hooks/`: estado e ações do clube
-- `services/`: persistência local
-- `types/`: modelo de dados
-- `utils/`: regras de gamificação
+- onboarding local e criação da sala;
+- convite e entrada local da segunda pessoa;
+- biblioteca individual por perfil;
+- cronômetro e registro de sessão;
+- atualização de páginas sem regressão do progresso;
+- metas e pactos semanais da sala;
+- XP, níveis, streaks e conquistas derivados;
+- cofre e fechamento semanal;
+- histórico completo de sessões e resultados;
+- estados de carregamento, erro e vazio;
+- layout responsivo para desktop e mobile.
 
-Os dados são locais ao navegador. Para uma próxima fase, a API de `services/storage.ts` pode ser substituída por uma implementação do Supabase sem espalhar acesso à persistência pelos componentes.
+## Limites deste MVP
+
+Não há autenticação, API, banco remoto, sincronização entre dispositivos nem controle de acesso no servidor. A troca de perfil e o convite funcionam apenas no mesmo navegador, portanto não são uma fronteira de segurança. O scaffold de D1 existente no projeto não é usado pelo produto.
+
+Para integrar um backend, preserve o contrato normalizado de `ClubState`, substitua `services/storage.ts` por um repositório remoto e aplique autorização server-side com base no usuário autenticado e em `memberships`.

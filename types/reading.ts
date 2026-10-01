@@ -3,7 +3,7 @@ export type BookStatus = "Quero ler" | "Lendo" | "Concluído";
 export type CardKind = "reward" | "penalty";
 
 export type Profile = { id: string; name: string; initials: string; accent: string; createdAt: string };
-export type Room = { id: string; name: string; ownerProfileId: string; inviteCode: string; createdAt: string };
+export type Room = { id: string; name: string; ownerProfileId: string; createdAt: string };
 export type Membership = { id: string; roomId: string; profileId: string; role: MembershipRole; joinedAt: string };
 export type Book = { id: string; roomId: string; ownerProfileId: string; title: string; author: string; currentPage: number; totalPages: number; status: BookStatus; color: string; createdAt: string; completedAt?: string };
 export type ReadingSession = { id: string; roomId: string; profileId: string; bookId: string; occurredOn: string; durationMinutes: number; startPage?: number; endPage?: number; note?: string; createdAt: string };

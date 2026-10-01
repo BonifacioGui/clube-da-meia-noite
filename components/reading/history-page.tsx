@@ -2,7 +2,7 @@ import { BookOpen, CalendarCheck, CheckCircle2, Clock3, History, XCircle } from 
 import type { ReadingClub } from "@/hooks/use-reading-club";
 import { addDays, dateKey, parseDateKey } from "@/utils/domain";
 
-const dayLabel = (value: string) => new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric" }).format(parseDateKey(value)).replaceAll(" de ", " ");
+const dayLabel = (value: string) => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "short", year: "numeric" }).format(parseDateKey(value)).replaceAll(" de ", " ");
 const weekLabel = (value: string) => `${dayLabel(value)} — ${dayLabel(dateKey(addDays(parseDateKey(value), 6)))}`;
 
 export function HistoryPage({ club }: { club: ReadingClub }) {

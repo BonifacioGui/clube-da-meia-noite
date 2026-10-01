@@ -19,7 +19,7 @@ export function useReadingClubTools(club: ReadingClub) {
     register({
       name: "record_reading_session", title: "Registrar sessão de leitura", description: "Registra uma sessão concluída para o perfil ativo e recalcula XP, meta e progresso do livro.",
       inputSchema: { type: "object", properties: { minutes: { type: "integer", minimum: 1 }, endPage: { type: "integer", minimum: 0 }, note: { type: "string", maxLength: 180 } }, required: ["minutes"], additionalProperties: false }, annotations: { readOnlyHint: false, untrustedContentHint: false },
-      execute: (input) => { const value = input as { minutes?: number; endPage?: number; note?: string }; if (!Number.isInteger(value.minutes) || Number(value.minutes) < 1) throw new Error("Duração inválida."); club.saveSession({ minutes: value.minutes!, endPage: value.endPage, note: value.note }); return { status: "saved", profileId: club.activeProfile!.id, minutes: value.minutes }; },
+      execute: async (input) => { const value = input as { minutes?: number; endPage?: number; note?: string }; if (!Number.isInteger(value.minutes) || Number(value.minutes) < 1) throw new Error("Duração inválida."); const saved = await club.saveSession({ minutes: value.minutes!, endPage: value.endPage, note: value.note }); return { status: saved ? "saved" : "failed", profileId: club.activeProfile!.id, minutes: value.minutes }; },
     });
     return () => lifecycle.abort();
   }, [club]);

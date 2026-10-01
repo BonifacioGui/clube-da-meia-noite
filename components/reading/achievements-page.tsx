@@ -2,11 +2,11 @@ import { Award, BookCheck, CalendarCheck, Flame, LockKeyhole, Sparkles, Timer, U
 import type { ReadingClub } from "@/hooks/use-reading-club";
 
 const achievements = [
-  { name: "Primeira Página", description: "Complete sua primeira sessão.", icon: Sparkles, value: (club: ReadingClub) => club.data?.sessions.length ?? 0, target: 1, unit: "sessão" },
-  { name: "Leitor Consistente", description: "Leia durante 7 dias seguidos.", icon: CalendarCheck, value: (club: ReadingClub) => Math.max(0, ...(club.data?.users.map((user) => user.streak) ?? [])), target: 7, unit: "dias" },
+  { name: "Primeira Página", description: "Complete sua primeira sessão.", icon: Sparkles, value: (club: ReadingClub) => club.data?.sessions.filter((session) => session.profileId === club.activeProfile?.id).length ?? 0, target: 1, unit: "sessão" },
+  { name: "Leitor Consistente", description: "Leia durante 7 dias seguidos.", icon: CalendarCheck, value: (club: ReadingClub) => club.data?.users.find((user) => user.id === club.activeProfile?.id)?.streak ?? 0, target: 7, unit: "dias" },
   { name: "Casal Literário", description: "Cumpram 4 metas semanais juntos.", icon: UsersRound, value: (club: ReadingClub) => club.data?.completedWeeklyGoals ?? 0, target: 4, unit: "semanas" },
-  { name: "Maratonista", description: "Leia 120 minutos em uma semana.", icon: Timer, value: (club: ReadingClub) => Math.max(0, ...(club.data?.users.map((user) => user.minutesThisWeek) ?? [])), target: 120, unit: "min" },
-  { name: "Livro Fechado", description: "Finalize seu primeiro livro.", icon: BookCheck, value: (club: ReadingClub) => club.data?.books.filter((book) => book.status === "Concluído").length ?? 0, target: 1, unit: "livro" },
+  { name: "Maratonista", description: "Leia 120 minutos em uma semana.", icon: Timer, value: (club: ReadingClub) => club.data?.users.find((user) => user.id === club.activeProfile?.id)?.minutesThisWeek ?? 0, target: 120, unit: "min" },
+  { name: "Livro Fechado", description: "Finalize seu primeiro livro.", icon: BookCheck, value: (club: ReadingClub) => club.data?.books.filter((book) => book.ownerProfileId === club.activeProfile?.id && book.status === "Concluído").length ?? 0, target: 1, unit: "livro" },
   { name: "Chama Acesa", description: "Mantenham 5 semanas de pacto.", icon: Flame, value: (club: ReadingClub) => club.data?.coupleStreak ?? 0, target: 5, unit: "semanas" },
 ];
 

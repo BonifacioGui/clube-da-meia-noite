@@ -24,7 +24,7 @@ export function Dashboard({ club, onStartReading }: { club: ReadingClub; onStart
         <Progress value={Math.min(100, progress)} className="reader-progress" />
         <div className="reader-numbers"><span><b>{user.daysThisWeek}/{data.weeklyGoal.days}</b> dias</span><span><b>{user.minutesThisWeek}</b> min</span><span><b>{user.xp}</b> XP</span></div>
         <div className="current-book"><span className="tiny-cover" style={{ background: book?.color }}><BookOpen size={15} /></span><div><small>LENDO AGORA</small><strong>{book?.title ?? "Escolha um livro"}</strong><p>{pageProgress}% concluído</p></div></div>
-      </article>; })}{data.users.length < 2 && <article className="reader-card invite-reader"><span><UsersRound size={22} /></span><h3>O outro lugar está esperando</h3><p>Abra Perfil para adicionar a segunda pessoa com o código <strong>{data.room.inviteCode}</strong>.</p></article>}</div>
+      </article>; })}{data.users.length < 2 && <article className="reader-card invite-reader"><span><UsersRound size={22} /></span><h3>O outro lugar está esperando</h3><p>Abra Clube para gerar um link de convite seguro e temporário.</p></article>}</div>
     </section>
     <section className="pact-card panel-card">
       <div className="section-title"><div><span className="overline">PACTO DA SEMANA</span><h2>Nosso combinado</h2></div><button className="ghost-button" onClick={club.drawPact}><Dices size={16} /> Sortear pacto</button></div>

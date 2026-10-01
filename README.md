@@ -1,45 +1,60 @@
 # Clube da Meia-Noite
 
-MVP gamificado de leitura cooperativa para uma sala de até duas pessoas. A aplicação funciona sem backend: o estado normalizado é persistido no `localStorage` do navegador e toda a interface é derivada desse estado.
+Aplicação gamificada de leitura cooperativa para uma sala de até duas pessoas. O Supabase Auth identifica cada leitor e o PostgreSQL com RLS é a única fonte de verdade dos dados do clube.
 
-## Executar localmente
+## Configuração
 
-Requisito: Node.js 22 ou superior.
+1. Crie um projeto no Supabase.
+2. Aplique `supabase/migrations/20261001000100_clube_core.sql` pelo CLI (`supabase db push`) ou SQL Editor.
+3. Em Authentication → URL Configuration, configure a URL do site e permita `/auth/callback` e `/reset-password` como redirects.
+4. Copie `.env.example` para `.env.local` e preencha somente `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+5. Nunca use `service_role` no frontend ou no Sites.
 
 ```bash
 npm install
 npm run dev
 ```
 
-O modo de desenvolvimento carrega um seed demonstrativo isolado em `data/dev-seed.ts` somente quando ainda não existe estado v2 persistido. Builds de produção iniciam no onboarding vazio.
+Sem as variáveis públicas, a aplicação mostra uma tela de configuração; ela não cai para mocks nem para dados locais.
 
 ## Fonte de verdade
 
-- Perfis, salas e vínculos: `profiles`, `rooms` e `memberships`.
-- Livros: pertencem simultaneamente à sala e ao perfil proprietário.
-- Sessões: apontam para sala, perfil e livro compatíveis.
-- Metas, pactos, cartas, cofre e resultados semanais: pertencem à sala.
-- XP, níveis, progresso, dias lidos, streak individual, streak da dupla e conquistas: são calculados a partir de sessões e resultados; não são armazenados como contadores duplicados.
-- Persistência e reparo de relações: `services/storage.ts`.
-- Seletores, cálculos e visões derivadas: `utils/domain.ts` e `utils/gamification.ts`.
-- Mutações e regras de autorização local: `hooks/use-reading-club.ts`.
+- `auth.users` + `profiles`: conta e identidade individual.
+- `rooms` + `room_members`: sala, proprietário e participação ativa.
+- `books` + `reading_sessions`: biblioteca e sessões individuais. FKs compostas impedem associar um livro a uma pessoa de outra sala.
+- `weekly_goals`, `weekly_pacts`, `pact_cards`, `weekly_results`, `vault_transactions`: dados compartilhados da sala.
+- XP, nível, progresso, streaks e conquistas: derivados dos registros persistidos; não existem contadores duplicados editáveis.
+- Convites: somente o SHA-256 do token fica no banco; o token original aparece uma vez, expira em sete dias, é revogável e tem uso único.
 
-## Fluxos implementados
+O cofre usa um livro-razão separado de XP. `pact_cards.kind` e `metadata` permanecem extensíveis para futuros tipos de carta ou moedas sem acoplar a economia ao progresso de leitura.
 
-- onboarding local e criação da sala;
-- convite e entrada local da segunda pessoa;
-- biblioteca individual por perfil;
-- cronômetro e registro de sessão;
-- atualização de páginas sem regressão do progresso;
-- metas e pactos semanais da sala;
-- XP, níveis, streaks e conquistas derivados;
-- cofre e fechamento semanal;
-- histórico completo de sessões e resultados;
-- estados de carregamento, erro e vazio;
-- layout responsivo para desktop e mobile.
+## Regras de segurança
 
-## Limites deste MVP
+- RLS está habilitado em todas as tabelas públicas.
+- Leitura de dados compartilhados exige participação ativa na sala.
+- Livros só podem ser inseridos, alterados ou excluídos pelo próprio dono.
+- Sessões, convites, entrada/saída, substituição de cartas e fechamento semanal usam funções transacionais que derivam `auth.uid()` no servidor.
+- A lotação de duas pessoas é protegida por trigger e lock da sala, não apenas pela UI.
+- Sair não apaga histórico. O proprietário precisa transferir a sala quando há outra pessoa.
 
-Não há autenticação, API, banco remoto, sincronização entre dispositivos nem controle de acesso no servidor. A troca de perfil e o convite funcionam apenas no mesmo navegador, portanto não são uma fronteira de segurança. O scaffold de D1 existente no projeto não é usado pelo produto.
+## Verificação local
 
-Para integrar um backend, preserve o contrato normalizado de `ClubState`, substitua `services/storage.ts` por um repositório remoto e aplique autorização server-side com base no usuário autenticado e em `memberships`.
+```bash
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+## Roteiro de teste com duas contas
+
+1. Em uma janela normal, cadastre a conta A, confirme o e-mail e crie uma sala.
+2. Em Clube, gere o convite e copie o link.
+3. Abra o link numa janela anônima, cadastre/confirme a conta B e aceite o convite preservado em `/invite/{token}`.
+4. Confirme que ambas veem a mesma meta, pacto, cofre e histórico, mas cada uma só edita os próprios livros.
+5. Registre uma sessão na conta A; atualize/focalize a conta B e confira minutos, páginas, XP e histórico.
+6. Tente reutilizar o convite, usar um convite expirado e entrar com uma terceira conta; todos devem falhar.
+7. No SQL Editor com JWT de usuário, tente consultar outra sala e inserir livro com `owner_id` alheio; RLS deve retornar zero linhas/erro.
+8. Feche a semana apenas depois de haver duas pessoas; confirme o snapshot e que um segundo fechamento falha pela unicidade.
+9. Teste recuperação de senha e saída da conta. Teste saída da sala: o proprietário deve transferir a propriedade antes de sair.
+
+Os testes reais de Auth/RLS exigem um projeto Supabase configurado; o build sem credenciais valida apenas o código e a tela segura de configuração.

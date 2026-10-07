@@ -5,6 +5,6 @@ import { requireSupabase } from "@/lib/supabase";
 
 export default function AuthCallbackPage() {
   const [error, setError] = useState("");
-  useEffect(() => { const url = new URL(window.location.href); const code = url.searchParams.get("code"); const next = url.searchParams.get("next")?.startsWith("/") ? url.searchParams.get("next")! : "/"; if (!code) { queueMicrotask(() => setError("O link de autenticação é inválido ou expirou.")); return; } void requireSupabase().auth.exchangeCodeForSession(code).then(({ error: exchangeError }) => { if (exchangeError) setError(exchangeError.message); else window.location.replace(next); }); }, []);
+  useEffect(() => { if (!navigator.onLine) { queueMicrotask(() => setError("Conecte-se à internet para confirmar seu acesso.")); return; } const url = new URL(window.location.href); const code = url.searchParams.get("code"); const next = url.searchParams.get("next")?.startsWith("/") ? url.searchParams.get("next")! : "/"; if (!code) { queueMicrotask(() => setError("O link de autenticação é inválido ou expirou.")); return; } void requireSupabase().auth.exchangeCodeForSession(code).then(({ error: exchangeError }) => { if (exchangeError) setError(exchangeError.message); else window.location.replace(next); }); }, []);
   return <div className="app-loading"><MoonStar size={28} /><p>{error || "Confirmando seu acesso…"}</p></div>;
 }

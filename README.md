@@ -58,3 +58,32 @@ npm run build
 9. Teste recuperação de senha e saída da conta. Teste saída da sala: o proprietário deve transferir a propriedade antes de sair.
 
 Os testes reais de Auth/RLS exigem um projeto Supabase configurado; o build sem credenciais valida apenas o código e a tela segura de configuração.
+
+## Instalar como aplicativo
+
+O Clube da Meia-Noite é uma PWA. A instalação não cria uma segunda conta nem copia os dados do clube para o aparelho: autenticação e dados compartilhados continuam no Supabase.
+
+### Android
+
+1. Abra o site no Chrome.
+2. Use o botão discreto **Instalar** quando ele aparecer ou abra o menu do navegador.
+3. Toque em **Instalar app** ou **Adicionar à tela inicial**.
+4. Abra o ícone **Meia-Noite** na tela inicial. O aplicativo será executado em modo independente do navegador.
+
+### iPhone e iPad
+
+1. Abra o site no Safari.
+2. Toque no botão **Compartilhar**.
+3. Escolha **Adicionar à Tela de Início**.
+4. Confirme o nome e toque em **Adicionar**.
+
+No iOS, a instalação é controlada pelo Safari e não existe um prompt programático equivalente ao Android.
+
+## Cache e funcionamento offline
+
+- O service worker guarda apenas a tela offline, manifesto, ícones e assets estáticos do app.
+- HTML autenticado, rotas de autenticação, convites, chamadas do Supabase e respostas privadas não entram no cache.
+- Ao trocar de conta ou sair, o cache estático de execução é limpo e o estado em memória é invalidado antes de exibir outra conta.
+- Uma tela já aberta pode continuar visível sem rede, mas qualquer ação que dependa do Supabase é recusada até a conexão voltar.
+- Uma abertura nova sem rede mostra uma página offline neutra. Não existe fila de sessões nem sincronização offline nesta etapa.
+- O identificador `VERSION` de `public/sw.js` deve ser alterado quando a estratégia ou os assets pré-carregados mudarem; na ativação, caches antigos do Clube são removidos.

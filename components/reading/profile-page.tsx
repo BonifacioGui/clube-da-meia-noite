@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import type { ReadingClub } from "@/hooks/use-reading-club";
 import { requireSupabase } from "@/lib/supabase";
 import { achievementProgress } from "@/utils/achievements";
+import { isOffline } from "@/lib/pwa";
 
 export function ProfilePage({ club, email, onSignOut }: { club: ReadingClub; email: string; onSignOut: () => Promise<void> }) {
   const [name, setName] = useState(club.activeProfile?.name ?? "");
@@ -18,7 +19,7 @@ export function ProfilePage({ club, email, onSignOut }: { club: ReadingClub; ema
   if (!profile || !member) return null;
 
   const saveIdentity = async () => { const saved = await club.updateProfile(name, accent); if (saved) setIdentityDirty(false); };
-  const updatePassword = async () => { if (password.length < 8) return toast.error("Use ao menos 8 caracteres."); const { error } = await requireSupabase().auth.updateUser({ password }); if (error) return toast.error(error.message); setPassword(""); toast.success("Senha atualizada."); };
+  const updatePassword = async () => { if (isOffline()) return toast.error("Conecte-se à internet para atualizar sua senha."); if (password.length < 8) return toast.error("Use ao menos 8 caracteres."); const { error } = await requireSupabase().auth.updateUser({ password }); if (error) return toast.error(error.message); setPassword(""); toast.success("Senha atualizada."); };
 
   const stats = [
     { label: "Dias em sequência", value: member.streak, icon: Flame },

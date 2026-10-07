@@ -8,6 +8,7 @@ import { activeProfile, currentBookFor, currentRoom, deriveClubView, formatWeekR
 import { progressionForXp } from "@/utils/gamification";
 import * as backend from "@/services/supabase-club";
 import { getSupabase } from "@/lib/supabase";
+import { isOffline } from "@/lib/pwa";
 
 const emptyState = (): ClubState => ({ schemaVersion: 2, activeProfileId: null, activeRoomId: null, profiles: [], rooms: [], memberships: [], books: [], sessions: [], weeklyGoals: [], weeklyPacts: [], pactCards: [], vaultEntries: [], weeklyResults: [], roomInvites: [] });
 const message = (error: unknown) => error instanceof Error ? error.message : "Não foi possível concluir a operação.";
@@ -26,9 +27,11 @@ export function useReadingClub(user: User | null) {
     catch (error) { if (sequence === refreshSequence.current) setStorageError(message(error)); }
     finally { if (sequence === refreshSequence.current) setHydrated(true); }
   }, [user]);
-  useEffect(() => { queueMicrotask(() => { setHydrated(false); void refresh(); }); }, [refresh]);
-  const data = useMemo(() => deriveClubView(state), [state]);
-  const active = activeProfile(state); const room = currentRoom(state);
+  useEffect(() => { queueMicrotask(() => { setHydrated(false); setState(emptyState()); void refresh(); }); }, [refresh]);
+  const safeState = useMemo(() => user && state.activeProfileId === user.id ? state : emptyState(), [state, user]);
+  const readyForUser = !user || state.activeProfileId === user.id || Boolean(storageError);
+  const data = useMemo(() => deriveClubView(safeState), [safeState]);
+  const active = activeProfile(safeState); const room = currentRoom(safeState);
   const clubXp = data?.users.reduce((sum, member) => sum + member.xp, 0) ?? 0;
   const activeXp = data?.users.find((member) => member.id === user?.id)?.xp ?? 0;
   const activeProgress = useMemo(() => progressionForXp(activeXp), [activeXp]);
@@ -54,11 +57,11 @@ export function useReadingClub(user: User | null) {
     channel.subscribe((status) => setSyncStatus(status === "SUBSCRIBED" ? "live" : status === "CHANNEL_ERROR" || status === "TIMED_OUT" ? "fallback" : "connecting"));
     return () => { window.clearTimeout(timer); void supabase.removeChannel(channel); };
   }, [refresh, room?.id]);
-  const currentBook = (profileId = user?.id ?? "") => room ? currentBookFor(state, room.id, profileId) : undefined;
-  const run = async (action: () => Promise<void>, success?: string) => { try { await action(); await refresh(); if (success) toast.success(success); return true; } catch (error) { toast.error(message(error)); return false; } };
+  const currentBook = (profileId = user?.id ?? "") => room ? currentBookFor(safeState, room.id, profileId) : undefined;
+  const run = async (action: () => Promise<void>, success?: string) => { if (isOffline()) { toast.error("Você está offline. Reconecte-se antes de salvar alterações."); return false; } try { await action(); await refresh(); if (success) toast.success(success); return true; } catch (error) { toast.error(message(error)); return false; } };
   const createRoom = (roomName: string) => run(() => backend.createRoom(roomName), "Sala criada. Agora convide a segunda pessoa.");
   const joinRoom = (token: string) => run(() => backend.joinRoom(token), "Você entrou no clube.");
-  const createInvite = async () => { if (!room) return null; try { const value = await backend.createInvite(room.id); setInvite(value); await refresh(); return value; } catch (error) { toast.error(message(error)); return null; } };
+  const createInvite = async () => { if (!room) return null; if (isOffline()) { toast.error("Você está offline. Reconecte-se para gerar um convite."); return null; } try { const value = await backend.createInvite(room.id); setInvite(value); await refresh(); return value; } catch (error) { toast.error(message(error)); return null; } };
   const revokeInvite = () => room ? run(async () => { await backend.revokeInvites(room.id); setInvite(null); }, "Convite revogado") : Promise.resolve(false);
   const renameRoom = (name: string) => room ? run(() => backend.renameRoom(room.id, name), "Nome do clube atualizado") : Promise.resolve(false);
   const saveSession = (payload: { minutes: number; startPage?: number; endPage?: number; note?: string }) => { const book = currentBook(); if (!book) return Promise.resolve(false); if (!Number.isFinite(payload.minutes) || payload.minutes < 1) { toast.error("A sessão precisa ter pelo menos um minuto."); return Promise.resolve(false); } if (payload.startPage != null && payload.endPage != null && payload.endPage < payload.startPage) { toast.error("A página final não pode vir antes da inicial."); return Promise.resolve(false); } return run(() => backend.recordSession(book.id, Math.round(payload.minutes), payload.startPage, payload.endPage, payload.note), "Sessão salva · progresso recalculado"); };
@@ -72,6 +75,6 @@ export function useReadingClub(user: User | null) {
   const closeWeek = (weekStart: string) => room ? run(() => backend.closeWeek(room.id, weekStart), "Semana fechada com o histórico real") : Promise.resolve(false);
   const updateProfile = (name: string, accent: string) => user ? run(() => backend.updateProfile(user.id, name, accent), "Perfil atualizado") : Promise.resolve(false);
   const leaveRoom = (transferTo?: string) => room ? run(() => backend.leaveRoom(room.id, transferTo), "Você saiu da sala") : Promise.resolve(false);
-  return { state, data, hydrated, storageError, dataSource: "supabase" as const, activeProfile: active, room, invite, syncStatus, weekLabel: formatWeekRange(), currentBook, clubXp, activeXp, activeProgress, refresh, createRoom, joinRoom, createInvite, revokeInvite, renameRoom, saveSession, upsertBook, deleteBook, setCurrentBook, updateGoal, drawPact, updateCards, addVault, closeWeek, updateProfile, leaveRoom };
+  return { state: safeState, data, hydrated: hydrated && readyForUser, storageError, dataSource: "supabase" as const, activeProfile: active, room, invite, syncStatus, weekLabel: formatWeekRange(), currentBook, clubXp, activeXp, activeProgress, refresh, createRoom, joinRoom, createInvite, revokeInvite, renameRoom, saveSession, upsertBook, deleteBook, setCurrentBook, updateGoal, drawPact, updateCards, addVault, closeWeek, updateProfile, leaveRoom };
 }
 export type ReadingClub = ReturnType<typeof useReadingClub>;

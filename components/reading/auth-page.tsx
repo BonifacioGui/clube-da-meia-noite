@@ -4,6 +4,7 @@ import { useState } from "react";
 import { BookOpen, KeyRound, LogIn, MoonStar, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { requireSupabase } from "@/lib/supabase";
+import { isOffline } from "@/lib/pwa";
 
 type Mode = "login" | "signup" | "forgot";
 
@@ -16,7 +17,9 @@ export function AuthPage({ inviteToken }: { inviteToken?: string }) {
   const callback = typeof window === "undefined" ? "" : `${window.location.origin}/auth/callback?next=${encodeURIComponent(inviteToken ? `/invite/${inviteToken}` : "/")}`;
 
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault(); setBusy(true);
+    event.preventDefault();
+    if (isOffline()) return toast.error("Conecte-se à internet para entrar ou criar uma conta.");
+    setBusy(true);
     try {
       const supabase = requireSupabase();
       if (mode === "forgot") {

@@ -12,6 +12,7 @@ export type WeeklyPact = { id: string; roomId: string; weekStart: string; reward
 export type PactCard = { id: string; roomId: string; kind: CardKind; text: string };
 export type VaultEntry = { id: string; roomId: string; profileId: string | null; amount: number; reason: string; occurredOn: string };
 export type WeeklyResult = { id: string; roomId: string; weekStart: string; memberResults: Record<string, boolean>; outcome: "both_met" | "one_met" | "none_met" };
+export type RoomInvite = { id: string; roomId: string; expiresAt: string; createdAt: string };
 
 export type ClubState = {
   schemaVersion: 2;
@@ -27,9 +28,10 @@ export type ClubState = {
   pactCards: PactCard[];
   vaultEntries: VaultEntry[];
   weeklyResults: WeeklyResult[];
+  roomInvites: RoomInvite[];
 };
 
-export type MemberView = Profile & { xp: number; streak: number; daysThisWeek: number; minutesThisWeek: number; totalSessions: number };
+export type MemberView = Profile & { xp: number; streak: number; daysThisWeek: number; minutesThisWeek: number; totalSessions: number; totalMinutes: number; completedBooks: number };
 export type CardOption = { id: string; text: string };
 export type VaultHistoryView = { id: string; amount: number; user: string; reason: string; date: string };
 export type ClubView = {
@@ -45,5 +47,7 @@ export type ClubView = {
   coupleStreak: number;
   completedWeeklyGoals: number;
   currentWeekClosed: boolean;
+  pendingWeeks: string[];
+  activeInvite: RoomInvite | null;
   vault: { balance: number; history: VaultHistoryView[] };
 };

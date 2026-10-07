@@ -2,7 +2,6 @@
 import { BookOpen, CalendarDays, Coins, Dices, Flame, Gift, Play, Skull, Sparkles, Target, Timer, Trophy, UsersRound, WalletCards, Zap } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import type { ReadingClub } from "@/hooks/use-reading-club";
-import { levelFor } from "@/utils/gamification";
 
 export function Dashboard({ club, onStartReading }: { club: ReadingClub; onStartReading: () => void }) {
   if (!club.data) return null;
@@ -13,8 +12,8 @@ export function Dashboard({ club, onStartReading }: { club: ReadingClub; onStart
       <div className="week-ring" style={{ "--progress": `${pairProgress * 3.6}deg` } as React.CSSProperties}><div><strong>{pairProgress}%</strong><span>da meta</span></div></div>
     </section>
     <section className="stats-row">
-      <div className="mini-stat"><span><Zap size={17} /></span><div><small>XP do casal</small><strong>{club.totalXp.toLocaleString("pt-BR")}</strong></div></div>
-      <div className="mini-stat"><span><Trophy size={17} /></span><div><small>Nível atual</small><strong>{levelFor(club.totalXp).level} · {levelFor(club.totalXp).name}</strong></div></div>
+      <div className="mini-stat"><span><Zap size={17} /></span><div><small>XP acumulado pelo clube</small><strong>{club.clubXp.toLocaleString("pt-BR")}</strong></div></div>
+      <div className="mini-stat"><span><Trophy size={17} /></span><div><small>Seu nível</small><strong>{club.activeProgress.level} · {club.activeProgress.name}</strong></div></div>
       <div className="mini-stat"><span><WalletCards size={17} /></span><div><small>Cofre</small><strong>{data.vault.balance.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></div></div>
     </section>
     <section className="reader-section panel-card">
@@ -31,7 +30,7 @@ export function Dashboard({ club, onStartReading }: { club: ReadingClub; onStart
       <div className="pact-list"><div className="pact-item target"><span><Target size={20} /></span><div><small>META</small><strong>{data.weeklyGoal.days} dias e {data.weeklyGoal.minutes} minutos</strong></div></div><div className="pact-item reward"><span><Gift size={20} /></span><div><small>RECOMPENSA</small><strong>{data.pact.reward || "Ainda não sorteada"}</strong></div></div><div className="pact-item penalty"><span><Skull size={20} /></span><div><small>PENALIDADE LEVE</small><strong>{data.pact.penalty || "Ainda não sorteada"}</strong></div></div></div>
       <button className="mobile-start" disabled={!club.currentBook()} onClick={onStartReading}><Play size={18} fill="currentColor" /> {club.currentBook() ? "Começar a ler" : "Escolha um livro atual"}</button>
     </section>
-    <section className="activity-card panel-card"><div className="section-title"><div><span className="overline">ÚLTIMAS PÁGINAS</span><h2>Ritmo recente</h2></div></div><div className="activity-list">{data.sessions.slice(0, 3).map((session) => { const user = data.users.find((u) => u.id === session.profileId); const book = data.books.find((b) => b.id === session.bookId); return <div key={session.id}><span className="activity-avatar" style={{ background: user?.accent }}>{user?.initials}</span><div><strong>{user?.name} leu {book?.title}</strong><p>{session.note ?? "Mais um capítulo concluído."}</p></div><span className="activity-time"><Timer size={13} /> {session.durationMinutes} min</span></div>; })}{data.sessions.length === 0 && <div className="empty-line"><BookOpen size={18} /><p>A primeira sessão da sala aparecerá aqui.</p></div>}</div></section>
+    <section className="activity-card panel-card"><div className="section-title"><div><span className="overline">ÚLTIMAS PÁGINAS</span><h2>Ritmo recente</h2></div></div><div className="activity-list">{data.sessions.slice(0, 3).map((session) => { const user = club.state.profiles.find((item) => item.id === session.profileId); const book = data.books.find((b) => b.id === session.bookId); return <div key={session.id}><span className="activity-avatar" style={{ background: user?.accent }}>{user?.initials}</span><div><strong>{user?.name ?? "Leitor"} leu {book?.title ?? "um livro"}</strong><p>{session.note ?? "Mais um capítulo concluído."}</p></div><span className="activity-time"><Timer size={13} /> {session.durationMinutes} min</span></div>; })}{data.sessions.length === 0 && <div className="empty-line"><BookOpen size={18} /><p>A primeira sessão da sala aparecerá aqui.</p></div>}</div></section>
     <section className="vault-card"><div><span className="vault-icon"><Coins size={24} /></span><p>Cofre da Leitura</p><h2>{data.vault.balance.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</h2><small>Para livros e experiências que rendem boas histórias.</small></div><Sparkles className="vault-spark" /></section>
   </div>;
 }

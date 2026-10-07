@@ -6,7 +6,7 @@ create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null check (char_length(trim(display_name)) between 1 and 60),
   avatar_url text,
-  accent text not null default '#d69b54' check (accent ~ '^#[0-9a-fA-F]{6}$'),
+  accent text not null default '#5f8ee6' check (accent ~ '^#[0-9a-fA-F]{6}$'),
   timezone text not null default 'America/Sao_Paulo',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -55,7 +55,7 @@ create table public.books (
   current_page integer not null default 0 check (current_page >= 0),
   total_pages integer not null default 0 check (total_pages >= 0 and (total_pages = 0 or current_page <= total_pages)),
   status text not null default 'want_to_read' check (status in ('want_to_read', 'reading', 'completed')),
-  color text not null default '#744d62' check (color ~ '^#[0-9a-fA-F]{6}$'),
+  color text not null default '#31466f' check (color ~ '^#[0-9a-fA-F]{6}$'),
   completed_at date,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),

@@ -25,7 +25,7 @@ const navItems = [
 ] as const;
 const pageMeta = {
   home: { eyebrow: "NOSSA SEMANA", title: "A constância fica melhor a dois.", description: "", icon: UsersRound },
-  library: { eyebrow: "ESTANTE COMPARTILHADA", title: "Minha Biblioteca", description: "Histórias em curso e próximas aventuras", icon: BookHeart },
+  library: { eyebrow: "ESTANTES DO CLUBE", title: "Biblioteca", description: "Sua leitura e a estante da sua dupla", icon: BookHeart },
   achievements: { eyebrow: "SALA DE TROFÉUS", title: "Conquistas", description: "Pequenos marcos de uma grande jornada", icon: Sparkles },
   history: { eyebrow: "MEMÓRIA DO CLUBE", title: "Histórico", description: "Sessões e pactos derivados dos registros persistidos", icon: History },
   club: { eyebrow: "NOSSO ESPAÇO", title: "Clube", description: "Convite, metas, pactos e cofre da sala", icon: Settings2 },
@@ -62,7 +62,7 @@ export function ReadingApp({ inviteToken }: { inviteToken?: string }) {
             <button key={item.id} className={tab === item.id ? "active" : ""} onClick={() => navigate(item.id)}><Icon size={19} strokeWidth={1.8} /><span>{item.label}</span></button>
           ); })}
         </nav>
-        <div className="side-cta"><span className="seal"><BookOpen size={19} /></span><p>Próximo nível</p><strong>{club.nextLevel.name}</strong><div className="mini-progress"><i style={{ width: `${club.nextLevel.progress}%` }} /></div><small>{club.nextLevel.remaining} XP restantes</small></div>
+        <div className="side-cta"><span className="seal"><BookOpen size={19} /></span><p>Nível {club.activeProgress.level}</p><strong>{club.activeProgress.name}</strong><div className="mini-progress"><i style={{ width: `${club.activeProgress.progress}%` }} /></div><small>{club.activeProgress.xp} / {club.activeProgress.nextXp} XP</small></div>
         <button className="read-now" onClick={() => setReaderOpen(true)}><Play size={17} fill="currentColor" /> Começar a ler</button>
       </aside>
       <main className="main-area">

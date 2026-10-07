@@ -5,7 +5,7 @@ Aplicação gamificada de leitura cooperativa para uma sala de até duas pessoas
 ## Configuração
 
 1. Crie um projeto no Supabase.
-2. Aplique `supabase/migrations/20261001000100_clube_core.sql` pelo CLI (`supabase db push`) ou SQL Editor.
+2. Aplique, na ordem, as migrations de `supabase/migrations` pelo CLI (`supabase db push`) ou SQL Editor. A migration da ETAPA 3 adiciona a trava de fechamento semanal, administração da sala e a publicação Realtime.
 3. Em Authentication → URL Configuration, configure a URL do site e permita `/auth/callback` e `/reset-password` como redirects.
 4. Copie `.env.example` para `.env.local` e preencha somente `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 5. Nunca use `service_role` no frontend ou no Sites.
@@ -51,10 +51,10 @@ npm run build
 2. Em Clube, gere o convite e copie o link.
 3. Abra o link numa janela anônima, cadastre/confirme a conta B e aceite o convite preservado em `/invite/{token}`.
 4. Confirme que ambas veem a mesma meta, pacto, cofre e histórico, mas cada uma só edita os próprios livros.
-5. Registre uma sessão na conta A; atualize/focalize a conta B e confira minutos, páginas, XP e histórico.
+5. Mantenha as duas contas abertas. Registre uma sessão na conta A e confira a atualização automática de minutos, páginas, XP e histórico na conta B; depois repita com foco/visibilidade para validar o fallback.
 6. Tente reutilizar o convite, usar um convite expirado e entrar com uma terceira conta; todos devem falhar.
 7. No SQL Editor com JWT de usuário, tente consultar outra sala e inserir livro com `owner_id` alheio; RLS deve retornar zero linhas/erro.
-8. Feche a semana apenas depois de haver duas pessoas; confirme o snapshot e que um segundo fechamento falha pela unicidade.
+8. Confirme que a semana em andamento não oferece fechamento. Para uma semana passada pendente, feche o resultado, confirme o snapshot e verifique que um segundo fechamento falha pela unicidade.
 9. Teste recuperação de senha e saída da conta. Teste saída da sala: o proprietário deve transferir a propriedade antes de sair.
 
 Os testes reais de Auth/RLS exigem um projeto Supabase configurado; o build sem credenciais valida apenas o código e a tela segura de configuração.

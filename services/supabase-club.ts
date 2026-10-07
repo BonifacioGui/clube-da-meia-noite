@@ -24,13 +24,13 @@ export async function loadClubState(userId: string): Promise<ClubState> {
   if (membershipError) throw membershipError;
   const membership = row(ownMembership);
   const own = row(ownProfile)!;
-  const base: ClubState = { schemaVersion: 2, activeProfileId: userId, activeRoomId: null, profiles: [{ id: userId, name: text(own.display_name), initials: text(own.display_name).slice(0, 1).toUpperCase(), accent: text(own.accent) || "#d69b54", createdAt: text(own.created_at) }], rooms: [], memberships: [], books: [], sessions: [], weeklyGoals: [], weeklyPacts: [], pactCards: [], vaultEntries: [], weeklyResults: [] };
+  const base: ClubState = { schemaVersion: 2, activeProfileId: userId, activeRoomId: null, profiles: [{ id: userId, name: text(own.display_name), initials: text(own.display_name).slice(0, 1).toUpperCase(), accent: text(own.accent) || "#5f8ee6", createdAt: text(own.created_at) }], rooms: [], memberships: [], books: [], sessions: [], weeklyGoals: [], weeklyPacts: [], pactCards: [], vaultEntries: [], weeklyResults: [], roomInvites: [] };
   if (!membership) return base;
   const roomId = text(membership.room_id);
   await ensureCurrentWeek(roomId);
-  const [roomResult, membersResult, booksResult, sessionsResult, goalsResult, pactsResult, cardsResult, vaultResult, resultsResult] = await Promise.all([
+  const [roomResult, membersResult, booksResult, sessionsResult, goalsResult, pactsResult, cardsResult, vaultResult, resultsResult, invitesResult] = await Promise.all([
     supabase.from("rooms").select("*").eq("id", roomId).single(),
-    supabase.from("room_members").select("*").eq("room_id", roomId).is("left_at", null),
+    supabase.from("room_members").select("*").eq("room_id", roomId),
     supabase.from("books").select("*").eq("room_id", roomId).order("created_at", { ascending: false }),
     supabase.from("reading_sessions").select("*").eq("room_id", roomId).order("created_at", { ascending: false }),
     supabase.from("weekly_goals").select("*").eq("room_id", roomId),
@@ -38,17 +38,19 @@ export async function loadClubState(userId: string): Promise<ClubState> {
     supabase.from("pact_cards").select("*").eq("room_id", roomId).eq("active", true),
     supabase.from("vault_transactions").select("*").eq("room_id", roomId).order("created_at", { ascending: false }),
     supabase.from("weekly_results").select("*").eq("room_id", roomId).order("week_start", { ascending: false }),
+    supabase.from("room_invites").select("id, room_id, expires_at, created_at").eq("room_id", roomId).is("revoked_at", null).is("used_at", null).gt("expires_at", new Date().toISOString()).order("created_at", { ascending: false }),
   ]);
-  for (const result of [roomResult, membersResult, booksResult, sessionsResult, goalsResult, pactsResult, cardsResult, vaultResult, resultsResult]) if (result.error) throw result.error;
-  const memberRows = rows(membersResult.data);
-  const memberIds = memberRows.map((item) => text(item.user_id));
+  for (const result of [roomResult, membersResult, booksResult, sessionsResult, goalsResult, pactsResult, cardsResult, vaultResult, resultsResult, invitesResult]) if (result.error) throw result.error;
+  const allMemberRows = rows(membersResult.data);
+  const memberRows = allMemberRows.filter((item) => item.left_at == null);
+  const memberIds = [...new Set(allMemberRows.map((item) => text(item.user_id)))];
   const { data: profileData, error: profilesError } = await supabase.from("profiles").select("*").in("id", memberIds);
   if (profilesError) throw profilesError;
   const profiles = rows(profileData);
   const roomData = row(roomResult.data)!;
   return {
     ...base, activeRoomId: roomId,
-    profiles: profiles.map((item) => ({ id: text(item.id), name: text(item.display_name), initials: text(item.display_name).slice(0, 1).toUpperCase(), accent: text(item.accent) || "#d69b54", createdAt: text(item.created_at) })),
+    profiles: profiles.map((item) => ({ id: text(item.id), name: text(item.display_name), initials: text(item.display_name).slice(0, 1).toUpperCase(), accent: text(item.accent) || "#5f8ee6", createdAt: text(item.created_at) })),
     rooms: [{ id: roomId, name: text(roomData.name), ownerProfileId: text(roomData.owner_id), createdAt: text(roomData.created_at) }],
     memberships: memberRows.map((item) => ({ id: `${text(item.room_id)}:${text(item.user_id)}`, roomId, profileId: text(item.user_id), role: item.role === "owner" ? "owner" : "member", joinedAt: text(item.joined_at) })),
     books: rows(booksResult.data).map((item) => ({ id: text(item.id), roomId, ownerProfileId: text(item.owner_id), title: text(item.title), author: text(item.author), currentPage: Number(item.current_page), totalPages: Number(item.total_pages), status: statusFromDb[text(item.status)] ?? "Quero ler", color: text(item.color), createdAt: text(item.created_at), completedAt: item.completed_at ? text(item.completed_at) : undefined })),
@@ -58,12 +60,15 @@ export async function loadClubState(userId: string): Promise<ClubState> {
     pactCards: rows(cardsResult.data).map((item) => ({ id: text(item.id), roomId, kind: text(item.kind) as CardKind, text: text(item.title) })).filter((item) => item.kind === "reward" || item.kind === "penalty"),
     vaultEntries: rows(vaultResult.data).map((item) => ({ id: text(item.id), roomId, profileId: text(item.created_by), amount: Number(item.amount), reason: text(item.reason), occurredOn: text(item.occurred_on) })),
     weeklyResults: rows(resultsResult.data).map((item) => { const raw = row(item.member_results) ?? {}; const memberResults = Object.fromEntries(Object.entries(raw).map(([id, value]) => [id, Boolean(row(value)?.met ?? value)])); return { id: text(item.id), roomId, weekStart: text(item.week_start), memberResults, outcome: text(item.outcome) as "both_met" | "one_met" | "none_met" }; }),
+    roomInvites: rows(invitesResult.data).map((item) => ({ id: text(item.id), roomId: text(item.room_id), expiresAt: text(item.expires_at), createdAt: text(item.created_at) })),
   };
 }
 
 export async function createRoom(name: string) { const { error } = await requireSupabase().rpc("create_room", { room_name: name.trim() }); if (error) throw error; }
 export async function joinRoom(token: string) { const { error } = await requireSupabase().rpc("join_room_by_invite", { raw_token: token.trim() }); if (error) throw error; }
 export async function createInvite(roomId: string) { const { data, error } = await requireSupabase().rpc("create_room_invite", { target_room: roomId }); if (error) throw error; const invite = rows(data)[0]; return { token: text(invite?.token), expiresAt: text(invite?.expires_at) }; }
+export async function revokeInvites(roomId: string) { const { error } = await requireSupabase().rpc("revoke_room_invites", { target_room: roomId }); if (error) throw error; }
+export async function renameRoom(roomId: string, name: string) { const { error } = await requireSupabase().rpc("rename_room", { target_room: roomId, new_name: name.trim() }); if (error) throw error; }
 export async function updateProfile(userId: string, displayName: string, accent: string) { const { error } = await requireSupabase().from("profiles").update({ display_name: displayName.trim(), accent }).eq("id", userId); if (error) throw error; }
 export async function saveBook(roomId: string, userId: string, book: Omit<Book, "id" | "roomId" | "ownerProfileId" | "createdAt"> & { id?: string }) {
   const supabase = requireSupabase(); const status = statusToDb[book.status];
@@ -79,5 +84,5 @@ export async function saveGoal(roomId: string, _userId: string, days: number, mi
 export async function replaceCards(roomId: string, cards: CardOption[], kind: CardKind) { const { error } = await requireSupabase().rpc("replace_pact_cards", { target_room: roomId, target_kind: kind, cards: cards.map((card) => ({ id: card.id, title: card.text.trim() })).filter((card) => card.title) }); if (error) throw error; }
 export async function savePact(roomId: string, _userId: string, reward: string, penalty: string) { const elements = [{ kind: "reward", title: reward }, { kind: "penalty", title: penalty }]; const { error } = await requireSupabase().rpc("set_weekly_pact", { target_room: roomId, target_week: dateKey(getWeekStart()), target_elements: elements }); if (error) throw error; }
 export async function addVaultEntry(roomId: string, userId: string, amount: number, reason: string) { const { error } = await requireSupabase().from("vault_transactions").insert({ room_id: roomId, created_by: userId, amount, reason: reason.trim(), occurred_on: dateKey(new Date()) }); if (error) throw error; }
-export async function closeWeek(roomId: string) { const { error } = await requireSupabase().rpc("close_week", { target_room: roomId, target_week: dateKey(getWeekStart()) }); if (error) throw error; }
+export async function closeWeek(roomId: string, weekStart: string) { const { error } = await requireSupabase().rpc("close_week", { target_room: roomId, target_week: weekStart }); if (error) throw error; }
 export async function leaveRoom(roomId: string, transferTo?: string) { const { error } = await requireSupabase().rpc("leave_room", { target_room: roomId, transfer_to: transferTo ?? null }); if (error) throw error; }

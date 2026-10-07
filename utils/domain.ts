@@ -29,8 +29,10 @@ export function deriveClubView(state: ClubState, now = new Date()): ClubView | n
   const weekStart = dateKey(getWeekStart(now)); const goal = currentGoal(state, room.id, now); const pact = currentPact(state, room.id, now);
   if (!goal || !pact || !state.memberships.some((membership) => membership.roomId === room.id && membership.profileId === profile.id)) return null;
   const sessions = roomSessions(state, room.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)); const profiles = roomProfiles(state, room.id);
-  const users = profiles.map((member) => { const metrics = weeklyMetrics(sessions, member.id, weekStart); const memberSessions = sessionsForProfile(sessions, member.id); return { ...member, xp: xpForProfile(state, room.id, member.id), streak: individualStreak(sessions, member.id, now), daysThisWeek: metrics.days, minutesThisWeek: metrics.minutes, totalSessions: memberSessions.length }; });
+  const users = profiles.map((member) => { const metrics = weeklyMetrics(sessions, member.id, weekStart); const memberSessions = sessionsForProfile(sessions, member.id); return { ...member, xp: xpForProfile(state, room.id, member.id), streak: individualStreak(sessions, member.id, now), daysThisWeek: metrics.days, minutesThisWeek: metrics.minutes, totalSessions: memberSessions.length, totalMinutes: memberSessions.reduce((sum, session) => sum + session.durationMinutes, 0), completedBooks: state.books.filter((book) => book.roomId === room.id && book.ownerProfileId === member.id && book.status === "Concluído").length }; });
   const entries = state.vaultEntries.filter((entry) => entry.roomId === room.id).sort((a, b) => b.occurredOn.localeCompare(a.occurredOn));
+  const closedWeeks = new Set(state.weeklyResults.filter((result) => result.roomId === room.id).map((result) => result.weekStart));
+  const pendingWeeks = state.weeklyGoals.filter((item) => item.roomId === room.id && item.weekStart < weekStart && !closedWeeks.has(item.weekStart)).map((item) => item.weekStart).sort((a, b) => b.localeCompare(a));
   return {
     room, activeUserId: profile.id, users, books: state.books.filter((book) => book.roomId === room.id), sessions,
     weeklyGoal: { days: goal.minDays, minutes: goal.minMinutes }, pact: { reward: pact.reward, penalty: pact.penalty },
@@ -38,6 +40,8 @@ export function deriveClubView(state: ClubState, now = new Date()): ClubView | n
     penaltyCards: state.pactCards.filter((card) => card.roomId === room.id && card.kind === "penalty").map(({ id, text }) => ({ id, text })),
     coupleStreak: coupleStreak(state, room.id), completedWeeklyGoals: completedWeeklyGoals(state, room.id),
     currentWeekClosed: state.weeklyResults.some((result) => result.roomId === room.id && result.weekStart === weekStart),
+    pendingWeeks,
+    activeInvite: state.roomInvites.filter((invite) => invite.roomId === room.id && invite.expiresAt > now.toISOString()).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null,
     vault: { balance: entries.reduce((sum, entry) => sum + entry.amount, 0), history: entries.map((entry) => ({ id: entry.id, amount: entry.amount, user: state.profiles.find((item) => item.id === entry.profileId)?.name ?? "Casal", reason: entry.reason, date: new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "short" }).format(parseDateKey(entry.occurredOn)).replace(" de ", " ") })) },
   };
 }

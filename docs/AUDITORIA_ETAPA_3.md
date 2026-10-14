@@ -58,6 +58,6 @@
 
 ## Ainda não validado com backend real
 
-Este checkout não contém `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` nem acesso administrativo a um projeto Supabase. Portanto, não foram executados testes reais de Auth, RLS, Realtime com duas contas, convite de uso único, fechamento semanal ou persistência remota. A migration `20261007000100_stage3_consistency_realtime.sql` precisa ser aplicada ao projeto antes da publicação conectada.
+Este checkout não contém valores reais de `NEXT_PUBLIC_SUPABASE_URL` ou `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Portanto, esta auditoria não executou testes reais de Auth, RLS, Realtime com duas contas, convite de uso único, fechamento semanal ou persistência remota. As migrations `20261001000100_clube_core.sql` e `20261007000100_stage3_consistency_realtime.sql` foram aplicadas manualmente no projeto de produção e não devem ser recriadas nem reaplicadas.
 
 Não há integração futura de moeda, mercado ou novos tipos de carta nesta etapa.

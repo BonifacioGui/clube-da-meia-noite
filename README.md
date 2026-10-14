@@ -5,10 +5,15 @@ Aplicação gamificada de leitura cooperativa para uma sala de até duas pessoas
 ## Configuração
 
 1. Crie um projeto no Supabase.
-2. Aplique, na ordem, as migrations de `supabase/migrations` pelo CLI (`supabase db push`) ou SQL Editor. A migration da ETAPA 3 adiciona a trava de fechamento semanal, administração da sala e a publicação Realtime.
-3. Em Authentication → URL Configuration, configure a URL do site e permita `/auth/callback` e `/reset-password` como redirects.
-4. Copie `.env.example` para `.env.local` e preencha somente `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-5. Nunca use `service_role` no frontend ou no Sites.
+2. Em um projeto novo, aplique uma única vez e na ordem as migrations de `supabase/migrations`. No projeto de produção atual, `20261001000100_clube_core.sql` e `20261007000100_stage3_consistency_realtime.sql` já foram aplicadas manualmente e não devem ser recriadas nem reaplicadas.
+3. Em **Authentication → URL Configuration**, use estas configurações de produção:
+   - **Site URL:** `https://clube-da-meia-noite-leitura.bonifacioguilherme1.chatgpt.site`
+   - **Redirect URLs:** `https://clube-da-meia-noite-leitura.bonifacioguilherme1.chatgpt.site/auth/callback**`
+   - `/reset-password` e `/invite/{token}` não são destinos diretos do Supabase: o callback troca o código e então navega internamente para essas rotas.
+4. Para desenvolvimento local, adicione também `http://localhost:5173/auth/callback**` e, se usar esse host, `http://127.0.0.1:5173/auth/callback**` às Redirect URLs.
+5. Copie `.env.example` para `.env.local` e preencha somente `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. `NEXT_PUBLIC_SUPABASE_ANON_KEY` continua aceito apenas como fallback temporário para instalações antigas.
+6. No ambiente publicado pelo Sites, abra as configurações do Site **Clube da Meia-Noite** (`appgprj_6abc53392b3881918f0adad6195bd3e3`) e cadastre as mesmas duas chaves em **Environment variables**, no ambiente de produção. Depois, faça uma nova implantação para aplicar a revisão do ambiente.
+7. Nunca use `service_role` no frontend ou no Sites.
 
 ```bash
 npm install
@@ -16,6 +21,8 @@ npm run dev
 ```
 
 Sem as variáveis públicas, a aplicação mostra uma tela de configuração; ela não cai para mocks nem para dados locais.
+
+A publishable key começa com `sb_publishable_` e é própria para código enviado ao navegador. Não cadastre `sb_secret_`, `service_role` ou qualquer chave privada neste projeto frontend.
 
 ## Fonte de verdade
 

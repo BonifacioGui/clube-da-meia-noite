@@ -50,11 +50,11 @@ O repositório deve permanecer com a visibilidade escolhida pelo proprietário. 
 Em **Supabase → Authentication → URL Configuration**, cadastre:
 
 - **Site URL:** `https://bonifaciogui.github.io/clube-da-meia-noite/`
-- **Redirect URL de produção:** `https://bonifaciogui.github.io/clube-da-meia-noite/auth/callback/`
-- **Redirect URL local:** `http://localhost:3000/clube-da-meia-noite/auth/callback/`
-- Opcional para o mesmo ambiente local: `http://127.0.0.1:3000/clube-da-meia-noite/auth/callback/`
+- **Redirect URL de produção:** `https://bonifaciogui.github.io/clube-da-meia-noite/auth/callback/**`
+- **Redirect URL local:** `http://localhost:3000/clube-da-meia-noite/auth/callback/**`
+- Opcional para o mesmo ambiente local: `http://127.0.0.1:3000/clube-da-meia-noite/auth/callback/**`
 
-Recuperação de senha e convites voltam primeiro ao callback PKCE autorizado. Depois da troca do código, a aplicação navega internamente para:
+O `**` fica restrito ao caminho do callback e é necessário porque a URL inclui o parâmetro variável `next`. Recuperação de senha e convites voltam primeiro ao callback PKCE autorizado. Depois da troca do código, a aplicação navega internamente para:
 
 - `https://bonifaciogui.github.io/clube-da-meia-noite/reset-password/`
 - `https://bonifaciogui.github.io/clube-da-meia-noite/invite/?token=TOKEN`

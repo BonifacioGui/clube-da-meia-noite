@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { PwaController } from "@/components/pwa/pwa-controller";
+import { appPath } from "@/lib/app-paths";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Clube da Meia-Noite",
   description: "Um clube de leitura gamificado, cooperativo e feito para dois.",
   applicationName: "Clube da Meia-Noite",
-  manifest: "/manifest.webmanifest",
+  manifest: appPath("/manifest.webmanifest"),
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -14,9 +15,9 @@ export const metadata: Metadata = {
   },
   formatDetection: { telephone: false },
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-    apple: "/icons/apple-touch-icon.png",
+    icon: appPath("/favicon.svg"),
+    shortcut: appPath("/favicon.svg"),
+    apple: appPath("/icons/apple-touch-icon.png"),
   },
   other: { "mobile-web-app-capable": "yes" },
 };

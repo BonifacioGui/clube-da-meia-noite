@@ -1,16 +1,19 @@
 /* Clube da Meia-Noite PWA: somente shell offline e assets públicos estáticos. */
-const VERSION = "midnight-pwa-v1";
+const VERSION = "midnight-pwa-v2";
 const PRECACHE = `${VERSION}-precache`;
 const STATIC_CACHE = `${VERSION}-static`;
-const OFFLINE_URL = "/offline.html";
+const SCOPE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, "");
+const scopedPath = (path) => `${SCOPE_PATH}/${path.replace(/^\/+/, "")}`;
+const relativePath = (url) => url.pathname.startsWith(`${SCOPE_PATH}/`) ? url.pathname.slice(SCOPE_PATH.length) : url.pathname;
+const OFFLINE_URL = scopedPath("offline.html");
 const PRECACHE_ASSETS = [
   OFFLINE_URL,
-  "/manifest.webmanifest",
-  "/favicon.svg",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/icons/icon-maskable-512.png",
-  "/icons/apple-touch-icon.png"
+  scopedPath("manifest.webmanifest"),
+  scopedPath("favicon.svg"),
+  scopedPath("icons/icon-192.png"),
+  scopedPath("icons/icon-512.png"),
+  scopedPath("icons/icon-maskable-512.png"),
+  scopedPath("icons/apple-touch-icon.png")
 ];
 
 self.addEventListener("install", (event) => {
@@ -21,10 +24,14 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith("midnight-pwa-") && ![PRECACHE, STATIC_CACHE].includes(key)).map((key) => caches.delete(key)))).then(() => self.clients.claim()));
 });
 
-const isPrivatePath = (url) => url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/") || url.pathname.startsWith("/invite/") || url.pathname.startsWith("/reset-password");
+const isPrivatePath = (url) => {
+  const path = relativePath(url);
+  return path.startsWith("/api/") || path.startsWith("/auth/") || path.startsWith("/invite/") || path.startsWith("/reset-password");
+};
 const isStaticAsset = (request, url) => {
-  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/assets/") || url.pathname.startsWith("/icons/")) return true;
-  return ["style", "script", "font", "image"].includes(request.destination) && /\.(?:css|js|mjs|woff2?|png|svg|webp|avif|ico)$/i.test(url.pathname);
+  const path = relativePath(url);
+  if (path.startsWith("/_next/static/") || path.startsWith("/assets/") || path.startsWith("/icons/")) return true;
+  return ["style", "script", "font", "image"].includes(request.destination) && /\.(?:css|js|mjs|woff2?|png|svg|webp|avif|ico)$/i.test(path);
 };
 
 self.addEventListener("fetch", (event) => {

@@ -5,6 +5,7 @@ import { BookOpen, KeyRound, LogIn, MoonStar, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { requireSupabase } from "@/lib/supabase";
 import { isOffline } from "@/lib/pwa";
+import { appUrl } from "@/lib/app-paths";
 
 type Mode = "login" | "signup" | "forgot";
 
@@ -14,7 +15,11 @@ export function AuthPage({ inviteToken }: { inviteToken?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const callback = typeof window === "undefined" ? "" : `${window.location.origin}/auth/callback?next=${encodeURIComponent(inviteToken ? `/invite/${inviteToken}` : "/")}`;
+  const callback = typeof window === "undefined" ? "" : (() => {
+    const url = new URL(appUrl("/auth/callback/"));
+    url.searchParams.set("next", inviteToken ? `/invite/?token=${encodeURIComponent(inviteToken)}` : "/");
+    return url.toString();
+  })();
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -23,7 +28,9 @@ export function AuthPage({ inviteToken }: { inviteToken?: string }) {
     try {
       const supabase = requireSupabase();
       if (mode === "forgot") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/auth/callback?next=/reset-password` });
+        const recoveryUrl = new URL(appUrl("/auth/callback/"));
+        recoveryUrl.searchParams.set("next", "/reset-password/");
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: recoveryUrl.toString() });
         if (error) throw error;
         toast.success("Enviamos o link de recuperação para seu e-mail.");
         setMode("login"); return;

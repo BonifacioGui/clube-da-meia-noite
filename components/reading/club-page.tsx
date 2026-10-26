@@ -10,6 +10,7 @@ import {
 import type { ReadingClub } from "@/hooks/use-reading-club";
 import type { CardOption } from "@/types/reading";
 import { formatWeekRange, parseDateKey } from "@/utils/domain";
+import { appUrl } from "@/lib/app-paths";
 
 function CardList({ kind, cards, onRemove }: { kind: "reward" | "penalty"; cards: CardOption[]; onRemove: (kind: "reward" | "penalty", itemId: string) => void }) {
   return <div className="chip-list">{cards.map((card) => <span key={card.id}>{card.text}<button onClick={() => onRemove(kind, card.id)} aria-label={`Excluir ${card.text}`}><Trash2 size={12} /></button></span>)}{cards.length === 0 && <small className="empty-hint">Nenhuma carta cadastrada.</small>}</div>;
@@ -35,7 +36,11 @@ export function ClubPage({ club }: { club: ReadingClub }) {
   const partner = club.data.users.find((user) => user.id !== club.activeProfile!.id);
   const isFull = club.data.users.length >= 2;
   const pendingWeek = club.data.pendingWeeks[0];
-  const inviteUrl = club.invite && typeof window !== "undefined" ? `${window.location.origin}/invite/${club.invite.token}` : "";
+  const inviteUrl = club.invite && typeof window !== "undefined" ? (() => {
+    const url = new URL(appUrl("/invite/"));
+    url.searchParams.set("token", club.invite!.token);
+    return url.toString();
+  })() : "";
   const inviteExpiry = club.invite?.expiresAt ?? club.data.activeInvite?.expiresAt;
   const syncCopy = club.syncStatus === "live" ? "Sincronizado em tempo real" : club.syncStatus === "fallback" ? "Sincronização por atualização" : "Conectando…";
 

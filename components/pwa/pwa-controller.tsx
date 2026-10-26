@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Download, Share, WifiOff, X } from "lucide-react";
+import { appPath } from "@/lib/app-paths";
 
 interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -37,7 +38,7 @@ export function PwaController() {
     window.addEventListener("appinstalled", onInstalled);
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
     if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
-      void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => undefined);
+      void navigator.serviceWorker.register(appPath("/sw.js"), { scope: appPath("/") }).catch(() => undefined);
     }
     return () => {
       window.removeEventListener("online", onOnline);

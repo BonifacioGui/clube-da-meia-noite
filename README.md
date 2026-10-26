@@ -1,96 +1,131 @@
 # Clube da Meia-Noite
 
-Aplicação gamificada de leitura cooperativa para uma sala de até duas pessoas. O Supabase Auth identifica cada leitor e o PostgreSQL com RLS é a única fonte de verdade dos dados do clube.
+Aplicação gamificada de leitura cooperativa para uma sala de até duas pessoas. O frontend é um export estático do Next.js hospedado como **Project Site** no GitHub Pages; autenticação, persistência, RLS e Realtime continuam no Supabase.
 
-## Configuração
+## Produção
 
-1. Crie um projeto no Supabase.
-2. Em um projeto novo, aplique uma única vez e na ordem as migrations de `supabase/migrations`. No projeto de produção atual, `20261001000100_clube_core.sql` e `20261007000100_stage3_consistency_realtime.sql` já foram aplicadas manualmente e não devem ser recriadas nem reaplicadas.
-3. Em **Authentication → URL Configuration**, use estas configurações de produção:
-   - **Site URL:** `https://clube-da-meia-noite-leitura.bonifacioguilherme1.chatgpt.site`
-   - **Redirect URLs:** `https://clube-da-meia-noite-leitura.bonifacioguilherme1.chatgpt.site/auth/callback**`
-   - `/reset-password` e `/invite/{token}` não são destinos diretos do Supabase: o callback troca o código e então navega internamente para essas rotas.
-4. Para desenvolvimento local, adicione também `http://localhost:5173/auth/callback**` e, se usar esse host, `http://127.0.0.1:5173/auth/callback**` às Redirect URLs.
-5. Copie `.env.example` para `.env.local` e preencha somente `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. `NEXT_PUBLIC_SUPABASE_ANON_KEY` continua aceito apenas como fallback temporário para instalações antigas.
-6. No ambiente publicado pelo Sites, abra as configurações do Site **Clube da Meia-Noite** (`appgprj_6abc53392b3881918f0adad6195bd3e3`) e cadastre as mesmas duas chaves em **Environment variables**, no ambiente de produção. Depois, faça uma nova implantação para aplicar a revisão do ambiente.
-7. Nunca use `service_role` no frontend ou no Sites.
+- Repositório: `BonifacioGui/clube-da-meia-noite`
+- URL esperada: `https://bonifaciogui.github.io/clube-da-meia-noite/`
+- Base path: `/clube-da-meia-noite`
+- Artefato: `out/`
+- Publicação: `.github/workflows/deploy-pages.yml`
+
+O `next.config.ts` usa `output: "export"`, `basePath`, `trailingSlash` e imagens sem otimização de servidor. A produção não depende de servidor Node, Vinext, Cloudflare, ChatGPT Sites ou funções server-side.
+
+## Configuração local
+
+1. Use Node.js 22 ou superior.
+2. Copie `.env.example` para `.env.local`.
+3. Preencha somente:
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_SUA_CHAVE_PUBLICA
+```
+
+4. Instale e execute:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Sem as variáveis públicas, a aplicação mostra uma tela de configuração; ela não cai para mocks nem para dados locais.
+Com o base path de produção ativo, o desenvolvimento abre em `http://localhost:3000/clube-da-meia-noite/`. A variável antiga `NEXT_PUBLIC_SUPABASE_ANON_KEY` é aceita apenas como fallback temporário; não use `service_role`, `sb_secret_`, chave privada ou qualquer segredo no frontend.
 
-A publishable key começa com `sb_publishable_` e é própria para código enviado ao navegador. Não cadastre `sb_secret_`, `service_role` ou qualquer chave privada neste projeto frontend.
+## Configuração do GitHub Pages
 
-## Fonte de verdade
+No repositório, abra **Settings → Secrets and variables → Actions → Variables → New repository variable** e crie exatamente:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+
+São **Repository Variables**, não Secrets: ambas são públicas por natureza e são incorporadas ao JavaScript enviado ao navegador. Nunca cadastre uma Service Role Key nesse workflow.
+
+Depois abra **Settings → Pages → Build and deployment** e selecione **GitHub Actions** como Source. Um push em `master` ou uma execução manual do workflow faz `npm ci`, lint, TypeScript, build estático, valida `out/` e publica somente esse diretório.
+
+O repositório deve permanecer com a visibilidade escolhida pelo proprietário. GitHub Pages em repositório privado pessoal exige um plano compatível (como GitHub Pro); mesmo assim, o site do Pages normalmente é público. Pages com acesso realmente privado exige organização no GitHub Enterprise Cloud.
+
+## Configuração do Supabase Auth
+
+Em **Supabase → Authentication → URL Configuration**, cadastre:
+
+- **Site URL:** `https://bonifaciogui.github.io/clube-da-meia-noite/`
+- **Redirect URL de produção:** `https://bonifaciogui.github.io/clube-da-meia-noite/auth/callback/`
+- **Redirect URL local:** `http://localhost:3000/clube-da-meia-noite/auth/callback/`
+- Opcional para o mesmo ambiente local: `http://127.0.0.1:3000/clube-da-meia-noite/auth/callback/`
+
+Recuperação de senha e convites voltam primeiro ao callback PKCE autorizado. Depois da troca do código, a aplicação navega internamente para:
+
+- `https://bonifaciogui.github.io/clube-da-meia-noite/reset-password/`
+- `https://bonifaciogui.github.io/clube-da-meia-noite/invite/?token=TOKEN`
+
+Essas duas URLs não precisam ser Redirect URLs adicionais no Supabase, porque o destino enviado ao Auth é sempre `/auth/callback/`. Não use mais o formato dinâmico `/invite/{token}`.
+
+## Banco e fonte de verdade
+
+Em um projeto Supabase novo, aplique uma única vez e na ordem as migrations de `supabase/migrations`. No projeto de produção atual, estas migrations já foram aplicadas manualmente e não devem ser recriadas nem reaplicadas:
+
+- `20261001000100_clube_core.sql`
+- `20261007000100_stage3_consistency_realtime.sql`
+
+Domínios persistidos:
 
 - `auth.users` + `profiles`: conta e identidade individual.
 - `rooms` + `room_members`: sala, proprietário e participação ativa.
-- `books` + `reading_sessions`: biblioteca e sessões individuais. FKs compostas impedem associar um livro a uma pessoa de outra sala.
+- `books` + `reading_sessions`: biblioteca e sessões individuais.
 - `weekly_goals`, `weekly_pacts`, `pact_cards`, `weekly_results`, `vault_transactions`: dados compartilhados da sala.
-- XP, nível, progresso, streaks e conquistas: derivados dos registros persistidos; não existem contadores duplicados editáveis.
-- Convites: somente o SHA-256 do token fica no banco; o token original aparece uma vez, expira em sete dias, é revogável e tem uso único.
+- XP, nível, progresso, streaks e conquistas: derivados dos registros persistidos.
+- Convites: somente o SHA-256 do token fica no banco; o token original aparece uma vez, expira, é revogável e tem uso único.
 
-O cofre usa um livro-razão separado de XP. `pact_cards.kind` e `metadata` permanecem extensíveis para futuros tipos de carta ou moedas sem acoplar a economia ao progresso de leitura.
+RLS limita leituras e mutações à conta e à sala corretas. Funções transacionais derivam `auth.uid()` no servidor; o frontend nunca recebe privilégios administrativos.
 
-## Regras de segurança
+## Rotas estáticas e autenticação
 
-- RLS está habilitado em todas as tabelas públicas.
-- Leitura de dados compartilhados exige participação ativa na sala.
-- Livros só podem ser inseridos, alterados ou excluídos pelo próprio dono.
-- Sessões, convites, entrada/saída, substituição de cartas e fechamento semanal usam funções transacionais que derivam `auth.uid()` no servidor.
-- A lotação de duas pessoas é protegida por trigger e lock da sala, não apenas pela UI.
-- Sair não apaga histórico. O proprietário precisa transferir a sala quando há outra pessoa.
+As rotas exportadas são:
 
-## Verificação local
+- `/clube-da-meia-noite/`
+- `/clube-da-meia-noite/auth/callback/`
+- `/clube-da-meia-noite/reset-password/`
+- `/clube-da-meia-noite/invite/?token=TOKEN`
+
+O token de convite está no query string para que a página seja um arquivo estático. O callback valida que `next` seja uma rota interna, troca o código PKCE pela sessão e só então redireciona dentro do base path.
+
+## PWA e cache
+
+- Manifesto, ícones, `start_url`, `scope` e service worker respeitam `/clube-da-meia-noite/`.
+- O service worker guarda apenas a tela offline, manifesto, ícones e assets estáticos.
+- Navegações autenticadas, callback, convite, recuperação, chamadas do Supabase e respostas com headers de autenticação não entram no cache.
+- Ao trocar de conta ou sair, o cache estático de execução é limpo e o estado em memória é invalidado.
+- Sem rede, operações do Supabase são bloqueadas; não existe fila nem sincronização offline de sessões.
+
+### Instalação no Android
+
+Abra a URL de produção no Chrome e use **Instalar app** ou **Adicionar à tela inicial**. O prompt discreto da própria aplicação aparece apenas quando o navegador oferece suporte.
+
+### Instalação no iPhone/iPad
+
+Abra a URL no Safari, toque em **Compartilhar → Adicionar à Tela de Início** e confirme. O iOS não oferece o mesmo prompt programático do Android.
+
+## Verificação
 
 ```bash
 npm run lint
-npx tsc --noEmit
+npm run typecheck
 npm run build
+npm run preview
 ```
+
+O build executa `scripts/prepare-pages.mjs`, que exige as páginas estáticas essenciais e confirma que os assets usam `/clube-da-meia-noite/_next/`. O preview serve `out/` em `http://127.0.0.1:4173/clube-da-meia-noite/`, simulando o subdiretório do GitHub Pages.
+
+Os testes reais de cadastro, callback, recuperação, convite, RLS e Realtime exigem as variáveis públicas válidas e a configuração manual do Supabase. O build sem credenciais apenas valida o frontend e a tela segura de configuração.
 
 ## Roteiro de teste com duas contas
 
-1. Em uma janela normal, cadastre a conta A, confirme o e-mail e crie uma sala.
-2. Em Clube, gere o convite e copie o link.
-3. Abra o link numa janela anônima, cadastre/confirme a conta B e aceite o convite preservado em `/invite/{token}`.
-4. Confirme que ambas veem a mesma meta, pacto, cofre e histórico, mas cada uma só edita os próprios livros.
-5. Mantenha as duas contas abertas. Registre uma sessão na conta A e confira a atualização automática de minutos, páginas, XP e histórico na conta B; depois repita com foco/visibilidade para validar o fallback.
-6. Tente reutilizar o convite, usar um convite expirado e entrar com uma terceira conta; todos devem falhar.
-7. No SQL Editor com JWT de usuário, tente consultar outra sala e inserir livro com `owner_id` alheio; RLS deve retornar zero linhas/erro.
-8. Confirme que a semana em andamento não oferece fechamento. Para uma semana passada pendente, feche o resultado, confirme o snapshot e verifique que um segundo fechamento falha pela unicidade.
-9. Teste recuperação de senha e saída da conta. Teste saída da sala: o proprietário deve transferir a propriedade antes de sair.
-
-Os testes reais de Auth/RLS exigem um projeto Supabase configurado; o build sem credenciais valida apenas o código e a tela segura de configuração.
-
-## Instalar como aplicativo
-
-O Clube da Meia-Noite é uma PWA. A instalação não cria uma segunda conta nem copia os dados do clube para o aparelho: autenticação e dados compartilhados continuam no Supabase.
-
-### Android
-
-1. Abra o site no Chrome.
-2. Use o botão discreto **Instalar** quando ele aparecer ou abra o menu do navegador.
-3. Toque em **Instalar app** ou **Adicionar à tela inicial**.
-4. Abra o ícone **Meia-Noite** na tela inicial. O aplicativo será executado em modo independente do navegador.
-
-### iPhone e iPad
-
-1. Abra o site no Safari.
-2. Toque no botão **Compartilhar**.
-3. Escolha **Adicionar à Tela de Início**.
-4. Confirme o nome e toque em **Adicionar**.
-
-No iOS, a instalação é controlada pelo Safari e não existe um prompt programático equivalente ao Android.
-
-## Cache e funcionamento offline
-
-- O service worker guarda apenas a tela offline, manifesto, ícones e assets estáticos do app.
-- HTML autenticado, rotas de autenticação, convites, chamadas do Supabase e respostas privadas não entram no cache.
-- Ao trocar de conta ou sair, o cache estático de execução é limpo e o estado em memória é invalidado antes de exibir outra conta.
-- Uma tela já aberta pode continuar visível sem rede, mas qualquer ação que dependa do Supabase é recusada até a conexão voltar.
-- Uma abertura nova sem rede mostra uma página offline neutra. Não existe fila de sessões nem sincronização offline nesta etapa.
-- O identificador `VERSION` de `public/sw.js` deve ser alterado quando a estratégia ou os assets pré-carregados mudarem; na ativação, caches antigos do Clube são removidos.
+1. Cadastre a conta A, confirme o e-mail e crie uma sala.
+2. Gere um convite em Clube e abra o link numa janela anônima.
+3. Cadastre/confirme a conta B e aceite o convite preservado em `/invite/?token=...`.
+4. Confirme que ambas veem a mesma meta, pacto, cofre e histórico, mas cada uma edita apenas seus próprios livros.
+5. Registre sessões nas duas contas e confira Realtime, XP, minutos, páginas, streak e histórico.
+6. Teste convite reutilizado, expirado e uma terceira conta; todos devem falhar.
+7. Teste recuperação de senha, logout/login com outra conta e confirme que nenhum dado anterior aparece do cache.
+8. Teste a PWA instalada e uma atualização de versão do service worker.

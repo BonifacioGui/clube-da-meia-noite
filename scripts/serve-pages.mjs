@@ -2,8 +2,8 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import path from "node:path";
+import { BASE_PATH } from "../config/site.mjs";
 
-const basePath = "/clube-da-meia-noite";
 const output = path.resolve("out");
 const port = Number(process.env.PORT || 4173);
 const mime = new Map([
@@ -21,13 +21,13 @@ const mime = new Map([
 createServer(async (request, response) => {
   try {
     const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "127.0.0.1"}`);
-    if (url.pathname === basePath) {
-      response.writeHead(308, { Location: `${basePath}/${url.search}` });
+    if (url.pathname === BASE_PATH) {
+      response.writeHead(308, { Location: `${BASE_PATH}/${url.search}` });
       response.end();
       return;
     }
-    if (!url.pathname.startsWith(`${basePath}/`)) throw new Error("outside base path");
-    const relative = decodeURIComponent(url.pathname.slice(basePath.length + 1));
+    if (!url.pathname.startsWith(`${BASE_PATH}/`)) throw new Error("outside base path");
+    const relative = decodeURIComponent(url.pathname.slice(BASE_PATH.length + 1));
     let file = path.resolve(output, relative || "index.html");
     if (!file.startsWith(`${output}${path.sep}`) && file !== output) throw new Error("invalid path");
     if ((await stat(file)).isDirectory()) file = path.join(file, "index.html");
@@ -43,5 +43,5 @@ createServer(async (request, response) => {
     response.end("Not found");
   }
 }).listen(port, "127.0.0.1", () => {
-  console.log(`Preview: http://127.0.0.1:${port}${basePath}/`);
+  console.log(`Preview: http://127.0.0.1:${port}${BASE_PATH}/`);
 });

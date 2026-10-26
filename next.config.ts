@@ -1,14 +1,13 @@
 import type { NextConfig } from "next";
-
-const basePath = "/clube-da-meia-noite";
+import { BASE_PATH } from "./config/site.mjs";
 
 const nextConfig: NextConfig = {
   output: "export",
-  basePath,
+  basePath: BASE_PATH,
   trailingSlash: true,
   images: { unoptimized: true },
   env: {
-    NEXT_PUBLIC_BASE_PATH: basePath,
+    NEXT_PUBLIC_BASE_PATH: BASE_PATH,
   },
 };
 

@@ -1,6 +1,7 @@
 import { access, readFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import path from "node:path";
+import { BASE_PATH } from "../config/site.mjs";
 
 const output = path.resolve("out");
 const requiredFiles = [
@@ -16,8 +17,8 @@ const requiredFiles = [
 await Promise.all(requiredFiles.map((file) => access(path.join(output, file), constants.R_OK)));
 
 const home = await readFile(path.join(output, "index.html"), "utf8");
-if (!home.includes("/clube-da-meia-noite/_next/")) {
-  throw new Error("O export não contém o basePath esperado /clube-da-meia-noite/.");
+if (!home.includes(`${BASE_PATH}/_next/`)) {
+  throw new Error(`O export não contém o basePath esperado ${BASE_PATH}/.`);
 }
 
 console.log(`Artefato estático validado em ${output}.`);
